@@ -1,0 +1,124 @@
+Module 10
+Classical Hypothesis testing
+Objective: continue the discussion of classical hypothesis testing from a frequentist statistics approach.
+
+Null and Alternative Hypotheses
+  Null H (H0): baseline hypothesis, assumed to be true; a sample statistic shows no deviation from what is expected/neutral.
+  Alt H (HA): conjecture we are testing; a sample statistic deviates more that deviates more than expected by chance from what is expected/neutral.
+  HA>H0: upper one-tailed test, ie sample stat is greater than expected under H0.
+  HA<H0: lower one-tailed test, ie sample stat is less than expected under H0.
+  HA=/=H0: two-tailed test, ie our sample stat is different, either greater or less, than expected under H0.
+  True:     Decide:     Result:
+    H0        H0          Correctly accept H0
+    H0        HA          Falsely reject H0 (type 1 error)
+    HA        H0          Falsely accept H0 (type 2 error)
+    HA        HA          Correctly reject H0
+  Classical frequentists do hypothesis testing by trying to minimize probability of type 1 error, which lowers the chances of type 2 error.
+  In stats tests we calculate a test statistic, and compare it to the appropriate standardized sampling distribution to get a p value.
+  P value: probability of obtaining a test stat that is as high/higher than our calculated one by chance, assuming H0 is true; represents the area under the sampling distribution associated with test stat values as/more extreme than the one we observed.
+  The test stat summarizes the "location" of the data in relation to an expected distribution based on H0. The test stat value is determined by both the difference between the original sample stat and the expected null value and the standard error of the sample stat.
+  We compare the p value to some significance  level, alpha, typically 0.05 or 0.01, to determine whether we reject or fail to reject the null. If p<alpha, there is sufficient evidence to reject the null.
+  Calculating the p value: specify the test stat (eg the mean), specify our null distribution, calculate the tail probability (ie the probability of obtaining a stat as/more extreme than was observed assuming that null distribution).
+
+Testing Sample Means: One Sample Z and T Tests
+  One-sample test: evaluating the mean of a single set of observations is significantly different than expected under the null.
+  Example: we found an average weight of 5.324 kg in a population of South Africa vervets, while last year's average was 4.9 kg. Is there a significant difference?
+    > library(curl)
+    > f <- curl("https://raw.githubusercontent.com/fuzzyatelin/fuzzyatelin.github.io/master/AN597_Fall19/vervet-weights.csv")
+    > d<-read.csv(f, header = TRUE, sep = ",", stringsAsFactors = FALSE)
+    > head(d)
+      id weight
+    1  1   5.17
+    2  2   7.13
+    3  3   4.70
+    4  4   6.10
+    5  5   6.36
+    6  6   4.93
+    > mean(d$weight)
+     [1] 5.323922
+  What are the H0 and HA? What is the hypothesis to test? Is it two-/upper-/lower-tailed? Calculate the mean, stdev, and SEM from the sample.
+    > mu<-4.9
+    > x<-d$weight
+    > m<-mean(x)
+    > s<-sd(x)
+    > n<-length(x)
+    > sem<-s/sqrt(n)
+  The test stat is effectively the standard normalized position of our sample mean in a distribution centered around the expected population mean. z=(x-mu)/(s/sqrt(n)); where x=mean of sample observations, mu=expected mean, s=sample standard deviation.
+    > z<-(m-mu)/sem
+    > z
+     [1] 3.103753
+  z is a quantile, the estimated number of standard errors of the mean away from the population mean that our sample falls. If we want to see if z is significant, we need to calculate the probability of seeing a deviation from the mean as high or higher than this by chance. To do this, we can use the pnorm() function. Because we have converted our sample mean to the standard normal scale, the mean= and sd= arguments of pnorm() are the defaults of 0 and 1 respectively. We want the probability of seeing a z this large or larger by chance.
+    > p<-1-pnorm(z)
+    > p
+     [1] 0.0009554144
+    > p<-pnorm(z, lower.tail = FALSE)
+    > p
+     [1] 0.0009554144
+  Because the sample size from a population is limited, it's better to use t distribution instead of normal to find the p value, because it has fatter tails. The statistic and process are exactly the same: T=(x-mu)/(s/sqrt(n))=(x-mu)/sqrt(s^2/n)
+    > p<-1-pt(z, df = n - 1)
+    > p
+     [1] 0.001570945
+    > p<-pt(z, df = n - 1, lower.tail = FALSE)
+    > p
+     [1] 0.001570945
+  R has a built-in t.test() function that condenses that into one line. We give our data, the expected population mean (mu), and the kind of test we're doing.
+    > t<-t.test(x = x, mu = mu, alternative = "greater")
+    > t
+      	One Sample t-test
+
+    data:  x
+    t = 3.1038, df = 50, p-value = 0.001571
+    alternative hypothesis: true mean is greater than 4.9
+    95 percent confidence interval:
+     5.095021      Inf
+    sample estimates:
+    mean of x 
+     5.323922 
+  t.test() can also calculate t distribution based CIs:
+    > lower<-m - qt(1 - 0.05/2, df = n - 1)*sem
+    > upper<-m + qt(1 - 0.05/2, df = n-1)*sem
+    > ci<-c(lower, upper)
+    > ci
+     [1] 5.049585 5.598258
+    > t<-t.test(x = x, mu = mu, alternative = "two.sided")
+    > ci<-t$conf.int
+    > ci
+     [1] 5.049585 5.598258
+     attr(,"conf.level")
+     [1] 0.95
+  For the example, the conclusion would be to reject H0, since the previous average falls outside the 95% CI for the t distribution based on the recent data.
+  Challenge 1: Lowland wooly monkeys have an avg body weight of 7.2 kg. Your population of monkeys might be a different species. You sample 15 weights from adults, resulting in a mean of 6.43 kg and stdev of 0.98 kg. Perform a hypothesis test of whether body weights on your population are different, using a two-tailed hypothesis. Alpha=0.05. Since the sample is <30, use the t distribution.
+    > f <- curl("https://raw.githubusercontent.com/fuzzyatelin/fuzzyatelin.github.io/master/AN597_Fall19/woolly-weights.csv")
+    > d<-read.csv(f, header = TRUE, sep = ",", stringsAsFactors = FALSE)
+    > head(d)
+     id weight
+    1  1   6.14
+    2  2   6.19
+    3  3   7.08
+    4  4   5.67
+    5  5   4.83
+    6  6   6.83
+    > x<-d$weight
+    > m<-mean(x)
+    > s<-sd(x)
+    > n<-length(x)
+    > sem<-s/sqrt(n)
+    > mu<-7.2
+    > t<-(m-mu)/sem
+    > t
+     [1] -3.336805
+    > alpha<-0.05
+    > crit<-qt(1-alpha/2, df=n-1)
+    > test<-t<-crit || t>crit
+    > test<-abs(t)>crit
+    > t.test(x = x, mu = mu, alternative = "two.sided")
+       One Sample t-test
+
+    data:  x
+    t = -3.3368, df = 14, p-value = 0.004891
+    alternative hypothesis: true mean is not equal to 7.2
+    95 percent confidence interval:
+     5.930689 6.923978
+    sample estimates:
+    mean of x 
+     6.427333 
