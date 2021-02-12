@@ -122,3 +122,290 @@ Testing Sample Means: One Sample Z and T Tests
     sample estimates:
     mean of x 
      6.427333 
+
+[ETA: commit error solution: https://stackoverflow.com/questions/11656761/git-please-tell-me-who-you-are-error
+  $ git init
+  $ git config user.name "eshelton"
+  $ git config user.email "eshelton@bu.edu"
+  $ git add *
+  $ git commit -m "some init msg": this automatically commits all files except .gitignore]
+  
+Comparing Sample Means: Two Sample Z and T Tests
+  Comparing two groups of measurements boils down to a hypothesis test for the difference between the two means. H0: the difference is 0. Consider if the samples are related or not, eg paired, unpaired/independent. Consider if the variances are roughly equal or not, eg if comparing male and female heights, are the variances comparable.
+  
+  Samples with unequal variances: If the samples are independent and variances cannot be assumed to be equal, use a Welch's t test, where the test stat is T=(x2-x1-mu)/sqrt(s1^2/n1+s2^2/n2). x1 and x2 are the means of the samples, mu is the expected difference under the null hypothesis, s1 and s2 are the stdevs of the samples.
+  Challenge 2: Load a file of black and white colobus weights and examine the str() of the file. Create vectors x and y for male and female weights. Plot them side by side and calculate the mean, sd, and sample size for both.
+    > f <- curl("https://raw.githubusercontent.com/fuzzyatelin/fuzzyatelin.github.io/master/AN597_Fall19/colobus-weights.csv")
+    > d<-read.csv(f, header = TRUE, sep = ",", stringsAsFactors = FALSE)
+    > head(d)
+      id weight  sex
+    1  1   7.24 male
+    2  2   6.09 male
+    3  3   6.97 male
+    4  4   6.98 male
+    5  5   6.08 male
+    6  6   6.22 male
+  This separates the weights based on sex, and puts them in their own variables:
+    > x<-d$weight[d$sex == "male"]
+    > y<-d$weight[d$sex == "female"]
+  This creates boxplots for both variables:
+    > par(mfrow = c(1,2))
+    > boxplot(x, ylim = c(4.5,8), main = "Weight (kg)", xlab = "Males")
+    > boxplot(y, ylim = c(4.5,8), main = "Weight (kg)", xlab = "Females")
+  This sets all the values:
+    > m1<-mean(x)
+    > m2<-mean(y)
+    > mu<-0 [ETA: this could be left out, the default argument value is 0]
+    > s1<-sd(x)
+    > s2<-sd(y)
+    > n1<-length(x)
+    > n2<-length(y)
+  This returns the t statistic:
+    > t<-(m2-m1-mu)/sqrt(s2^2/n2+s1^2/n1)
+    > t
+     [1] -11.45952
+  This identifies the critical values: 
+    > alpha<-0.05
+    > crit<-qt(1-alpha/2, df=n-1)
+    > crit
+     [1] 2.144787
+  This tests the two-tailed hypothesis, with a boolian test:
+    > test<- t< -crit || t>crit
+    > test<- abs(t) > crit
+    > test
+     [1] TRUE
+  For this test, df is calculated as df=(s2^2/n2 + s1^2/n1)^2/((s2^2/n2)^2/(n2 - 1) + (s1^2/n1)^2/(n1 - 1))
+    > df<-(s2^2/n2 + s1^2/n1)^2/((s2^2/n2)^2/(n2 - 1) + (s1^2/n1)^2/(n1 - 1))
+    > df
+     [1] 31.21733
+  Do the same using the t.test() function:
+    > t<-t.test(x = x, y = y, mu = 0, alternative = "two.sided")
+    > t
+
+	    Welch Two Sample t-test
+
+    data:  x and y
+    t = 11.46, df = 31.217, p-value = 1.023e-12
+    alternative hypothesis: true difference in means is not equal to 0
+    95 percent confidence interval:
+     1.191186 1.706814
+    sample estimates:
+    mean of x mean of y 
+        6.689     5.240 
+  
+  Samples with equal variances: a simpler t stat can be used if the variances of the two samples are more or less equal: T=(x2-x1-mu)/sqrt(sp^2(1/n1+1/n2)), where sp is the pooled sample stdev and sp^2=((n-1)s1^2+(n2-1)s2^2)/(n1+n2-2). The df can be calculated df=n1+n2-2.
+    > s<-sqrt((((n1-1)*s1^2)+((n2-1)*s2^2))/(n1+n2-2))
+    > t<-(m2-m1-mu)/(sqrt(s^2*(1/n1+1/n2)))
+    > t
+     [1] -11.45952
+    > df<-n1+n2-2
+    > df
+     [1] 38
+    > t<-t.test(x=x, y=y, mu=0, var.equal = TRUE, alternative = "two.sided")
+    > t
+
+      	Two Sample t-test
+
+    data:  x and y
+    t = 11.46, df = 38, p-value = 6.787e-14
+    alternative hypothesis: true difference in means is not equal to 0
+    95 percent confidence interval:
+     1.193025 1.704975
+    sample estimates:
+    mean of x mean of y 
+        6.689     5.240 
+  A crude test for variance equality is to divide the large by the smaller and if the result is <2, you can use the pooled variance version of the test, which has many fewer degrees of freedom. 
+    > var(x)/var(y)
+     [1] 2.746196
+  var.test() can be used to do an actual statistical test on the variance ratio, which compares the ratio test stat that was just calculated to an F distribution. This is often used to model ratios of random variables and is therefore useful in regression applications and for testing whether variances from two samples are different. It's dependent upon the specification of a pair of degrees of freedom values supplied as the arguments df1= and df2=; or inferred from the number of observations in each sample.
+    > vt<-var.test(x, y)
+    > vt
+
+      	F test to compare two variances
+
+    data:  x and y
+    F = 2.7462, num df = 19, denom df = 19, p-value = 0.03319
+    alternative hypothesis: true ratio of variances is not equal to 1
+    95 percent confidence interval:
+     1.086978 6.938128
+    sample estimates:
+    ratio of variances 
+              2.746196 
+    
+  Paired Samples: H0 is that the mean of individual paired differences between two samples, eg before and after, is zero. The test stat is T=(d-mu)/sqrt(sd^2/n), where d is the mean of difference between paired samples, mu is the expected mean difference between them, and sd is the stdev in the set of differences between them.
+  Challenge 3: Differences in IQs of individuals pre and post lecture. Plot a barchart of values before and after and construct a paired t test to evaluate the means before and after.
+    >f <- curl("https://raw.githubusercontent.com/fuzzyatelin/fuzzyatelin.github.io/master/AN597_Fall19/iqs.csv")
+    > d<-read.csv(f, header = TRUE, sep = ",", stringsAsFactors = FALSE)
+    > head(d)
+      id IQ.before IQ.after
+    1  1    124.54   133.50
+    2  2    125.98   131.93
+    3  3    126.93   129.15
+    4  4    114.93   129.38
+    5  5    122.41   132.77
+    6  6    123.64   126.80
+    > x<-d$IQ.before - d$IQ.after
+    > m<-mean(x)
+    > mu<-0
+    > s<-sd(x)
+    > n<-length(x)
+    > sem<-s/sqrt(n)
+    > par(mfrow=c(1,2))
+    > boxplot(d$IQ.before, ylim = c(115,145), main = "IQ", xlab = "Before")
+    > boxplot(d$IQ.after, ylim = c(115,145), main = "IQ", xlab = "After")
+    > t<-(m-mu)/sem
+    > t
+     [1] -1.789636
+    > alpha<-0.05
+    > crit<-qt(1-alpha/2, df=n-1)
+    > crit
+     [1] 2.093024
+    > test<-t < -crit || t > crit
+    > test
+     [1] FALSE
+    > t.test(x, df=n-1, alternative = "two.sided")
+
+	        One Sample t-test
+
+    data:  x
+    t = -1.7896, df = 19, p-value = 0.08946
+    alternative hypothesis: true mean is not equal to 0
+    95 percent confidence interval:
+     -6.762409  0.528409
+    sample estimates:
+    mean of x 
+       -3.117
+
+Testing Sample Proportions: One Sample Z Test
+  Constructing Z tests for proportions.
+  Create a population of 500 '1's and 500 '0's, where pi (the true population proportion of successes) is 0.5.
+    > pop<-c(rep(0,500), rep(1,500))
+  Take 1000 random samples of size n=10 from that population and calculate the proportion of '1's in each sample.
+    > pi<-0.5
+    > x<-NULL
+    > n<-10
+    > for (i in 1:1000) {
+    +     x[i] <- mean(sample(pop, size = n, replace = FALSE))} [ETA: taking the mean of a bunch of 0s and 1s yields the proportion of 1s]
+    > m<-mean(x)
+    > m
+     [1] 0.5017
+    > s<-sd(x)
+    > s
+     [1] 0.1565619
+    > pop_se<-sqrt(pi*(1-pi)/n)
+    > pop_se [ETA: the se is an estimate of the sd of the sampling distribution; this is the only returned number that is the same as the mod's]
+     [1] 0.1581139
+  The same is true with a population of 800 '1's and 200 '0's, where pi is 0.8.
+    > pop<-c(rep(0,800), rep(1,200))
+    > pi<-0.8
+    > x<-NULL
+    > n<-10
+    > for (i in 1:1000) {
+    +     x[i] <- mean(sample(pop, size = n, replace = FALSE))}
+    > m<-mean(x)
+    > m
+     [1] 0.195
+    > s<-sd(x)
+    > s
+     [1] 0.1286528
+    > pop_se<-sqrt(pi*(1-pi)/n)
+    > pop_se
+     [1] 0.1264911
+  This normal approximation is true as long as n is fairly large and pi is not close to 0 or 1. 
+  A rule of thumb is to check that both n*pi and n*(1-pi) are greater than 5.
+  z=(observed stat - expected stat)/standard error
+  z=(p-pi)/sqrt(pi*(1-pi)/n), where p=proportion in sample, pi=expected proportion.
+  Challenge 4: Data on nets that did or did not catch a bird overnight. Her previous data resulted in catching birds in 80% of nets. Is this data lower? 
+      >v <- c(0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 
+      + 1, 1, 0, 1, 0, 1, 1)
+    H0: There is no difference in netting success between this year and previous years.
+    HA: This year had lower netting success than previous years.
+    n*pi=30*0.8=24, this is >5.
+    n*(1-pi)=30*(1-0.8)=6, this is >5.
+    Calculating z and corresponding p value (lower tail one-tail hypothesis):
+      > phat<-mean(v)
+      > phat
+       [1] 0.6
+      > pi<-0.8
+      > n<-30
+      > z<-(phat-pi)/sqrt(pi*(1-pi)/30)
+      > z
+       [1] -2.738613
+      > p<-pnorm(z, lower.tail = TRUE)
+      > p
+       [1] 0.00308495
+    Calculate the 95% CI around p (this is the Wald confidence interval, one method of finding CIs for proportion data):
+      > lower<-phat-qnorm(0.975)*sqrt(phat*(1-phat)/30)
+      > upper<-phat+qnorm(0.975)*sqrt(phat*(1-phat)/30)
+      > ci<-c(lower, upper)
+      > ci
+    The same test with a one-liner in R (the CI is different because prop.test() estimates CI differently):
+      > pt<-prop.test(x=sum(v), n=length(v), p=0.8, conf.level = 0.95, correct = FALSE, alternative = "less")
+      > pt
+
+        	1-sample proportions test without continuity
+        	correction
+
+      data:  sum(v) out of length(v), null probability 0.8
+      X-squared = 7.5, df = 1, p-value = 0.003085
+      alternative hypothesis: true p is less than 0.8
+      95 percent confidence interval:
+       0.0000000 0.7328738
+      sample estimates:
+        p 
+      0.6 
+
+Comparing Sample Proportions: Two Sample Z Tests
+  z=(p2-p1-pi)/sqrt(pstar(1-pstar)(1/n1+1/n2))
+  pstar=(x1+x2)/(n1+n2)= pooled proportion
+  pi= expected difference, usually set to 0
+  p1 and p2= proportions of 'successes' in each sample
+    > v1 <- c(1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 
+    +         1, 0)
+    > v2 <- c(1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 
+    +         0, 1, 1, 0, 1, 1, 1)
+    > pstar<-(sum(v1)+sum(v2))/(length(v1)+length(v2))
+    > pstar
+     [1] 0.6363636
+    > phat1<-mean(v1)
+    > phat1
+     [1] 0.56
+    > phat2<-mean(v2)
+    > phat2
+     [1] 0.7
+    > pi<-0
+    > z<-(phat2-phat1)/sqrt((pstar*(1-pstar))*(1/length(v1)+1/length(v2)))
+    > z
+     [1] 1.074709
+    > p<-1-pnorm(z, lower.tail = TRUE)+pnorm(z, lower.tail = FALSE)
+    > p
+     [1] 0.2825049
+    > crit<-qnorm(1-alpha/2)
+    > crit
+     [1] 1.959964
+    > test<-p < -crit || p > crit
+    > test
+     [1] FALSE
+  OR:
+    > pt<-prop.test(x=c(sum(v2), sum(v1)), n=c(length(v2), length(v1)), alternative = "two.sided", correct = FALSE)
+    > pt
+    
+      	2-sample test for equality of proportions without
+      	continuity correction
+
+    data:  c(sum(v2), sum(v1)) out of c(length(v2), length(v1))
+    X-squared = 1.155, df = 1, p-value = 0.2825
+    alternative hypothesis: two.sided
+    95 percent confidence interval:
+     -0.1144634  0.3944634
+    sample estimates:
+    prop 1 prop 2 
+      0.70   0.56 
+      
+Summary of Z and T Tests
+  Z and T tests are used to evalutate whether a given sample stat deviates significantly from what is expected under a null model or whether two sample stats deviate significantly from one another. They are used for dealing with normally distributed, continuous variables, or those that can be approximated closely by the normal distribution.
+  We reject a H0 is the p value from a Z/T test is <alpha. CIs are calculated as mean+/-T(1-alpha/2) or Z(1-alpha/2)*sem, and if the (1-alpha) CI around doesn't include the expected value of the stat, H0 can be rejected. When the sample size > 30, or when dealing with proportions, we use Z quantiles for calculating CIs and p values; if sample size < 30 we use T quantiles.
+  T stats for testing a Single Mean: T = (x-mu)/sqrt(s^2/n)
+  T stats for Comparing Means: T = (x2 - x1 - mu)/sqrt(s1^2/n1 + s2^2/n2) [Unequal Variance]; T = (x2 - x1 - mu)/sqrt(sp^2(1/n1 + 1/n2)) [Equal Variance]; T = (d - mu)/sqrt(sd^2/n) [Paired Samples]
+  Z stat for testing a Single Proportion: Z = (p - pi)/sqrt(pi*(1 - pi)/n)
+  Z stat for Comparing Proportions: Z = (p2 - p1 - pi)/sqrt(pstar*(1 - pstar)(1/n1 + 1/n2))
