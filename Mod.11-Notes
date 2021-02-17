@@ -1,0 +1,125 @@
+Module 11
+Type I and II Errors and Statistical Power
+
+Preliminaries: Install the {curl}, {ggplot2}, and {manipulate} packages.
+Objectives: To discuss the concepts of Type I and Type II error, the multiple testing problem, statistical power, and effect size; and outline how we can use R to investigate these via simulation and built-in functions.
+
+Overview
+  Type I error: incorrectly rejecting a true H0, probability equal to alpha, the significance level.
+  Type II error: incorrectly failing to reject a false H0.
+
+Type I Error and the Multiple Testing Problem
+  There is a chance probability of falsely rejecting H0, if enough independent hypothesis tests are run; eg, if alpha=0.05, chance would give one "significant" result in roughly every twenty tests run. The chances of Type I error decrease if the means get further apart, the stdev of the distributions shrinks, or by decreasing alpha.
+  Simulation: code will simulate a bunch of random datasets from a normal distribution, and look at the Type I error rate.
+  typeI(): skeleton function to evaluate error rate; arguments: parameters of the normal distribution for the null we want to simulate from, sample size, $ level, the "alternative" Z/T test ("greater"/"less"/"two.tailed"), number of simulated datasets we want to generate.
+    > typeI <- function(mu0, sigma, n, alternative = "two.tailed", alpha = 0.05, k = 1000) {
+    +     p <- rep(NA, k) [ETA: sets up a vector of empty p values]
+    +     for (i in 1:k) {
+        [ETA: sets up a loop to run k simulations]
+    +         x <- rnorm(n = n, mean = mu0, sd = sigma)  [ETA: draws a sample from our distribution]
+    +         m <- mean(x)  [ETA: calculates the mean]
+    +         s <- sd(x)  [ETA: calculates the standard deviation]
+    +         z <- (m - mu0)/(s/sqrt(n))  [ETA: calculates the T statistic for the sample drawn from the null distribution relative to the null distribution; alternatively use t <- (m-mu0)/(s/sqrt(n))]
+    +         if (alternative == "less") {
+    +             p[i] <- pnorm(z, lower.tail = TRUE)  [ETA: calculates the associated p value; alternatively, use p[i] <- pt(t,df=n-1,lower.tail=TRUE)]
+    +         }
+    +         if (alternative == "greater") {
+    +             p[i] <- pnorm(z, lower.tail = FALSE)  [ETA: calculates the associated p value; alternatively, use p[i] <- pt(t,df=n-1,lower.tail=FALSE)]
+    +         }
+    +         if (alternative == "two.tailed") {
+    +             if (z > 0) 
+    +             {
+    +                 p[i] <- 2 * pnorm(z, lower.tail = FALSE)
+    +             }  [ETA: alternatively, use if (t > 0) {p[i] <- pt(t,df=n-1,lower.tail=FALSE)}]
+    +             if (z < 0) 
+    +             {
+    +                 p[i] <- 2 * pnorm(z, lower.tail = TRUE)
+    +             }  [ETA: alternatively, use if (t < 0) {p[i] <- pt(t,df=n-1,lower.tail=TRUE)}]
+    +         }
+    +     }
+    +
+    +     curve(dnorm(x, mu0, sigma/sqrt(n)), mu0 - 4 * sigma/sqrt(n), mu0 + 4 * sigma/sqrt(n), 
+    +           main = paste("Sampling Distribution Under the Null Hypothesis\nType I error rate from simulation = ", 
+    +                        length(p[p < alpha])/k, sep = ""), xlab = "x", ylab = "Pr(x)", col = "red", 
+    +           xlim = c(mu0 - 4 * sigma/sqrt(n), mu0 + 4 * sigma/sqrt(n)), ylim = c(0, 
+    +
+       dnorm(mu0, mu0, sigma/sqrt(n))))
+    +     abline(h = 0)
+    +
+    +     if (alternative == "less") {
+    +         polygon(cbind(c(mu0 - 4 * sigma/sqrt(n), seq(from = mu0 - 4 * sigma/sqrt(n), 
+    +                                                      to = mu0 - qnorm(1 - alpha) * sigma/sqrt(n), length.out = 100), 
+    +                         mu0 - qnorm(1 - alpha) * sigma/sqrt(n))), c(0, dnorm(seq(from = mu0 - 
+    +        
+             4 * sigma/sqrt(n), to = mu0 - qnorm(1 - alpha) * sigma/sqrt(n), 
+    +
+          length.out = 100), mean = mu0, sd = sigma/sqrt(n)), 0), border = "black", 
+    +                  col = "grey")
+    +          q <- pnorm(mu0 - qnorm(1 - alpha) * sigma/sqrt(n), mean = mu0, sd = sigma/sqrt(n)) - 
+    +              pnorm(mu0 - 4 * sigma/sqrt(n), mean = mu0, sd = sigma/sqrt(n))
+    +      }
+    +      if (alternative == "greater") {
+    +          polygon(cbind(c(mu0 + qnorm(1 - alpha) * sigma/sqrt(n), seq(from = mu0 + 
+    +                                qnorm(1 - alpha) * sigma/sqrt(n), to = mu0 + 4 * sigma/sqrt(n), 
+    +                          length.out = 100), mu0 + 4 * sigma/sqrt(n))), c(0, dnorm(seq(from = mu0 + 
+    +                    qnorm(1 - alpha) * sigma/sqrt(n), to = mu0 + 4 * sigma/sqrt(n), 
+    +                length.out = 100), mean = mu0, sd = sigma/sqrt(n)), 0), border = "black", 
+    +                  col = "grey")
+    +          q <- pnorm(mu0 + 4 * sigma/sqrt(n), mean = mu0, sd = sigma/sqrt(n)) - 
+    +              pnorm(mu0 + qnorm(1 - alpha) * sigma/sqrt(n), mean = mu0, sd = sigma/sqrt(n))
+    +       }
+    +       if (alternative == "two.tailed") {
+    +           polygon(cbind(c(mu0 - 4 * sigma/sqrt(n), seq(from = mu0 - 4 * sigma/sqrt(n), 
+    +                                                        to = mu0 - qnorm(1 - alpha/2) * sigma/sqrt(n), length.out = 100), 
+    +                           mu0 - qnorm(1 - alpha/2) * sigma/sqrt(n))), c(0, dnorm(seq(from = mu0 - 
+    +           4 * sigma/sqrt(n), to = mu0 - qnorm(1 - alpha/2) * sigma/sqrt(n), 
+    +
+            length.out = 100), mean = mu0, sd = sigma/sqrt(n)), 0), border = "black", 
+    +                  col = "grey")
+    +          polygon(cbind(c(mu0 + qnorm(1 - alpha/2) * sigma/sqrt(n), seq(from = mu0 + 
+    +                                qnorm(1 - alpha/2) * sigma/sqrt(n), to = mu0 + 4 * sigma/sqrt(n), 
+    +                            length.out = 100), mu0 + 4 * sigma/sqrt(n))), c(0, dnorm(seq(from = mu0 + 
+    +                        qnorm(1 - alpha/2) * sigma/sqrt(n), to = mu0 + 4 * sigma/sqrt(n), 
+    +                    length.out = 100), mean = mu0, sd = sigma/sqrt(n)), 0), border = "black", 
+    +                  col = "grey")
+    +          q <- pnorm(mu0 - qnorm(1 - alpha/2) * sigma/sqrt(n), mean = mu0, sd = sigma/sqrt(n)) - 
+    +              pnorm(mu0 - 4 * sigma/sqrt(n), mean = mu0, sd = sigma/sqrt(n)) + 
+    +              pnorm(mu0 + 4 * sigma/sqrt(n), mean = mu0, sd = sigma/sqrt(n)) - 
+    +              pnorm(mu0 + qnorm(1 - alpha/2) * sigma/sqrt(n), mean = mu0, sd = sigma/sqrt(n))
+    +       }
+    [ETA: print(round(q,digits=3)); this prints area in the shaded portion(s) of the curve]
+    +       return(length(p[p < alpha])/k)  [ETA: returns the proportion of simulations where p < alpha]
+    + }
+    > eI<-typeI(mu0 = -3, sigma = 2, n = 5000, alternative = "greater", alpha = 0.05): returns a graph with a shaded area in the right tail; "Sampling Distribution Under the Null Hypothesis Type I error rate from simulation = 0.057".
+    > eI<-typeI(mu0 = 5, sigma = 2, n = 1000, alternative = "less", alpha = 0.01): returns a graph with a shaded area in the left tail; "...simulation = 0.011".
+  
+Multiple Comparison Corrections
+  Bonferroni correction: when doing a total of k independent hypothesis tests, each with significance level alpha, we should adjust the alpha level we use to interpret statistical significance as: alphaB = alpha/k. If k=10, the adjusted alpha is 0.05/10 = 0.005. Attempts to control the 'family-wise error rate'. Considered a very conservative correction.
+    > alpha<-0.05
+    > pvals<-c(1e-04, 0.003, 0.005, 0.01, 0.02, 0.04, 0.045, 0.11, 0.18, 0.23)
+    > sig<-pvals<=alpha/length(pvals)
+    > sig: returns if the values are less than the adjusted alpha or not
+     [1]  TRUE  TRUE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE 
+  Benjamini & Hochberg correction: considered less conservative, attempts to control the 'false discovery rate', aims to limit the number of false 'discoveries' out of a set of discoveries to alpha. Calculate p values for all tests, order p values from smallest to largest, call any p ≤ alpha*i/m significant.
+    > library(ggplot2)
+    > alpha<-0.05
+    > psig<-NULL
+    > pvals<-c(1e-04, 0.003, 0.005, 0.01, 0.02, 0.04, 0.045, 0.11, 0.18, 0.27)
+    > for (i in 1:length(pvals)) {
+    +     psig[i]<-alpha*i/length(pvals)
+    + }
+    > d<-data.frame(cbind(rank = c(1:10), pvals, psig))
+    > p<-ggplot(data = d, aes(x = rank, y = pvals)) + geom_point() + geom_line(aes(x = rank, y = psig))
+    > p: returns a scatterplot of rank v. pvals, with a line of best fit
+    > sig<-pvals<=psig [ETA: vector of significant pvalues]
+    > sig [ETA: first five values are less than adjusted alpha]
+     [1]  TRUE  TRUE  TRUE  TRUE  TRUE FALSE FALSE FALSE FALSE FALSE
+  We can also adjust the p values instead of the alpha levels, with a built-in R function, p.adjust().
+    > sig<-p.adjust(pvals, method = "bonferroni") <= 0.05
+    > sig [ETA: first three adjusted p values are less than alpha]
+     [1]  TRUE  TRUE  TRUE FALSE FALSE FALSE FALSE FALSE FALSE FALSE
+    > sig<-p.adjust(pvals, method = "BH") <= 0.05
+    > sig [ETA: first five adjusted p values are less than alpha]
+     [1]  TRUE  TRUE  TRUE  TRUE  TRUE FALSE FALSE FALSE FALSE FALSE
+     
+Type II Error

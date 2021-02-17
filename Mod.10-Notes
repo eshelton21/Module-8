@@ -1,5 +1,5 @@
 Module 10
-Classical Hypothesis testing
+Classical Hypothesis Testing
 Objective: continue the discussion of classical hypothesis testing from a frequentist statistics approach.
 
 Null and Alternative Hypotheses
@@ -72,8 +72,8 @@ Testing Sample Means: One Sample Z and T Tests
     95 percent confidence interval:
      5.095021      Inf
     sample estimates:
-    mean of x 
-     5.323922 
+    mean of x
+     5.323922
   t.test() can also calculate t distribution based CIs:
     > lower<-m - qt(1 - 0.05/2, df = n - 1)*sem
     > upper<-m + qt(1 - 0.05/2, df = n-1)*sem
@@ -120,8 +120,8 @@ Testing Sample Means: One Sample Z and T Tests
     95 percent confidence interval:
      5.930689 6.923978
     sample estimates:
-    mean of x 
-     6.427333 
+    mean of x
+     6.427333
 
 [ETA: commit error solution: https://stackoverflow.com/questions/11656761/git-please-tell-me-who-you-are-error
   $ git init
@@ -129,10 +129,10 @@ Testing Sample Means: One Sample Z and T Tests
   $ git config user.email "eshelton@bu.edu"
   $ git add *
   $ git commit -m "some init msg": this automatically commits all files except .gitignore]
-  
+
 Comparing Sample Means: Two Sample Z and T Tests
   Comparing two groups of measurements boils down to a hypothesis test for the difference between the two means. H0: the difference is 0. Consider if the samples are related or not, eg paired, unpaired/independent. Consider if the variances are roughly equal or not, eg if comparing male and female heights, are the variances comparable.
-  
+
   Samples with unequal variances: If the samples are independent and variances cannot be assumed to be equal, use a Welch's t test, where the test stat is T=(x2-x1-mu)/sqrt(s1^2/n1+s2^2/n2). x1 and x2 are the means of the samples, mu is the expected difference under the null hypothesis, s1 and s2 are the stdevs of the samples.
   Challenge 2: Load a file of black and white colobus weights and examine the str() of the file. Create vectors x and y for male and female weights. Plot them side by side and calculate the mean, sd, and sample size for both.
     > f <- curl("https://raw.githubusercontent.com/fuzzyatelin/fuzzyatelin.github.io/master/AN597_Fall19/colobus-weights.csv")
@@ -164,7 +164,7 @@ Comparing Sample Means: Two Sample Z and T Tests
     > t<-(m2-m1-mu)/sqrt(s2^2/n2+s1^2/n1)
     > t
      [1] -11.45952
-  This identifies the critical values: 
+  This identifies the critical values:
     > alpha<-0.05
     > crit<-qt(1-alpha/2, df=n-1)
     > crit
@@ -190,9 +190,9 @@ Comparing Sample Means: Two Sample Z and T Tests
     95 percent confidence interval:
      1.191186 1.706814
     sample estimates:
-    mean of x mean of y 
-        6.689     5.240 
-  
+    mean of x mean of y
+        6.689     5.240
+
   Samples with equal variances: a simpler t stat can be used if the variances of the two samples are more or less equal: T=(x2-x1-mu)/sqrt(sp^2(1/n1+1/n2)), where sp is the pooled sample stdev and sp^2=((n-1)s1^2+(n2-1)s2^2)/(n1+n2-2). The df can be calculated df=n1+n2-2.
     > s<-sqrt((((n1-1)*s1^2)+((n2-1)*s2^2))/(n1+n2-2))
     > t<-(m2-m1-mu)/(sqrt(s^2*(1/n1+1/n2)))
@@ -212,9 +212,9 @@ Comparing Sample Means: Two Sample Z and T Tests
     95 percent confidence interval:
      1.193025 1.704975
     sample estimates:
-    mean of x mean of y 
-        6.689     5.240 
-  A crude test for variance equality is to divide the large by the smaller and if the result is <2, you can use the pooled variance version of the test, which has many fewer degrees of freedom. 
+    mean of x mean of y
+        6.689     5.240
+  A crude test for variance equality is to divide the large by the smaller and if the result is <2, you can use the pooled variance version of the test, which has many fewer degrees of freedom.
     > var(x)/var(y)
      [1] 2.746196
   var.test() can be used to do an actual statistical test on the variance ratio, which compares the ratio test stat that was just calculated to an F distribution. This is often used to model ratios of random variables and is therefore useful in regression applications and for testing whether variances from two samples are different. It's dependent upon the specification of a pair of degrees of freedom values supplied as the arguments df1= and df2=; or inferred from the number of observations in each sample.
@@ -229,9 +229,9 @@ Comparing Sample Means: Two Sample Z and T Tests
     95 percent confidence interval:
      1.086978 6.938128
     sample estimates:
-    ratio of variances 
-              2.746196 
-    
+    ratio of variances
+              2.746196
+
   Paired Samples: H0 is that the mean of individual paired differences between two samples, eg before and after, is zero. The test stat is T=(d-mu)/sqrt(sd^2/n), where d is the mean of difference between paired samples, mu is the expected mean difference between them, and sd is the stdev in the set of differences between them.
   Challenge 3: Differences in IQs of individuals pre and post lecture. Plot a barchart of values before and after and construct a paired t test to evaluate the means before and after.
     >f <- curl("https://raw.githubusercontent.com/fuzzyatelin/fuzzyatelin.github.io/master/AN597_Fall19/iqs.csv")
@@ -273,7 +273,7 @@ Comparing Sample Means: Two Sample Z and T Tests
     95 percent confidence interval:
      -6.762409  0.528409
     sample estimates:
-    mean of x 
+    mean of x
        -3.117
 
 Testing Sample Proportions: One Sample Z Test
@@ -311,12 +311,12 @@ Testing Sample Proportions: One Sample Z Test
     > pop_se<-sqrt(pi*(1-pi)/n)
     > pop_se
      [1] 0.1264911
-  This normal approximation is true as long as n is fairly large and pi is not close to 0 or 1. 
+  This normal approximation is true as long as n is fairly large and pi is not close to 0 or 1.
   A rule of thumb is to check that both n*pi and n*(1-pi) are greater than 5.
   z=(observed stat - expected stat)/standard error
   z=(p-pi)/sqrt(pi*(1-pi)/n), where p=proportion in sample, pi=expected proportion.
-  Challenge 4: Data on nets that did or did not catch a bird overnight. Her previous data resulted in catching birds in 80% of nets. Is this data lower? 
-      >v <- c(0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0, 
+  Challenge 4: Data on nets that did or did not catch a bird overnight. Her previous data resulted in catching birds in 80% of nets. Is this data lower?
+      >v <- c(0, 1, 1, 1, 0, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 1, 1, 0, 0, 1, 1, 1, 0,
       + 1, 1, 0, 1, 0, 1, 1)
     H0: There is no difference in netting success between this year and previous years.
     HA: This year had lower netting success than previous years.
@@ -352,17 +352,17 @@ Testing Sample Proportions: One Sample Z Test
       95 percent confidence interval:
        0.0000000 0.7328738
       sample estimates:
-        p 
-      0.6 
+        p
+      0.6
 
 Comparing Sample Proportions: Two Sample Z Tests
   z=(p2-p1-pi)/sqrt(pstar(1-pstar)(1/n1+1/n2))
   pstar=(x1+x2)/(n1+n2)= pooled proportion
   pi= expected difference, usually set to 0
   p1 and p2= proportions of 'successes' in each sample
-    > v1 <- c(1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0, 
+    > v1 <- c(1, 0, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 1, 1, 0, 0, 1, 1, 0, 0, 1, 1, 0,
     +         1, 0)
-    > v2 <- c(1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0, 
+    > v2 <- c(1, 1, 0, 0, 1, 1, 1, 1, 0, 1, 0, 1, 1, 1, 0, 1, 0, 1, 1, 1, 1, 1, 0,
     +         0, 1, 1, 0, 1, 1, 1)
     > pstar<-(sum(v1)+sum(v2))/(length(v1)+length(v2))
     > pstar
@@ -389,7 +389,7 @@ Comparing Sample Proportions: Two Sample Z Tests
   OR:
     > pt<-prop.test(x=c(sum(v2), sum(v1)), n=c(length(v2), length(v1)), alternative = "two.sided", correct = FALSE)
     > pt
-    
+
       	2-sample test for equality of proportions without
       	continuity correction
 
@@ -399,9 +399,9 @@ Comparing Sample Proportions: Two Sample Z Tests
     95 percent confidence interval:
      -0.1144634  0.3944634
     sample estimates:
-    prop 1 prop 2 
-      0.70   0.56 
-      
+    prop 1 prop 2
+      0.70   0.56
+
 Summary of Z and T Tests
   Z and T tests are used to evalutate whether a given sample stat deviates significantly from what is expected under a null model or whether two sample stats deviate significantly from one another. They are used for dealing with normally distributed, continuous variables, or those that can be approximated closely by the normal distribution.
   We reject a H0 is the p value from a Z/T test is <alpha. CIs are calculated as mean+/-T(1-alpha/2) or Z(1-alpha/2)*sem, and if the (1-alpha) CI around doesn't include the expected value of the stat, H0 can be rejected. When the sample size > 30, or when dealing with proportions, we use Z quantiles for calculating CIs and p values; if sample size < 30 we use T quantiles.
